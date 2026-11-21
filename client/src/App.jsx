@@ -68,7 +68,7 @@ export default function App() {
           <a href='/'>Личный кабинет</a>
           {user ? 
             <>
-              <a href='/new'>Новая запись</a>
+              <a href='/new'>Новая заявка</a>
               {user.role === 'admin' && <a href='/admin'>Администратор</a>}
               <button type='button' className='btn' onClick={logout}>Выйти</button>
             </> :
@@ -82,7 +82,7 @@ export default function App() {
         {page}
       </main>
       <footer className='container page'>
-        <small>Учебный сервис</small>
+        <small>«МастерПлюс»</small>
       </footer>
     </>
   )
