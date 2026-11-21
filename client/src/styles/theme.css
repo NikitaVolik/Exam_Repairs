@@ -1,14 +1,36 @@
 /* Нейтральные дополнения. Цвета и шрифт заданы в framework.css. */
+:root {
+  --color-bg: #FFFFFF;
+  --color-surface: #EDF6FC;
+  --color-text: #202C39;
+  --color-primary: #19345C;
+  --color-primary-hover: #122744;
+  --color-secondary: var(--color-primary);
+  --font-main: Arial, sans-serif;
+  --font-heading: var(--font-main);
+  --font-accent: var(--font-main);
+  --fs-h1: 36px;
+  --fs-h2: 24px;
+  --fs-h3: 18px;
+  --fs-body: 16px;
+  --fs-small: 12px;
+  --radius-md: 12px;
+}
+
+input:focus-visible, select:focus-visible, textarea:focus-visible,
+button:focus-visible, a:focus-visible { outline: 2px solid var(--color-primary); }
+.card:not(:has(> .card-body)) { padding: 16px; }
+.card-body { padding: 16px; }
 .page { padding-top: 24px; padding-bottom: 24px; }
 .site-header { padding: 16px 0; border-bottom: 1px solid var(--color-border); }
 a { text-decoration: underline; text-underline-offset: 3px; }
-small { font-size: var(--fs-small); }
-.field-error { color: #b42345; }
+small { font-size: var(--fs-small); color: #205C80; }
+.field-error { color: #B42345; }
 .btn { transition: background-color .2s, transform .2s; }
 .btn:active { transform: scale(.98); }
 .notice {
   position: fixed; right: 16px; bottom: 16px; z-index: 10;
   width: min(420px, calc(100% - 32px)); padding: 16px;
-  background: var(--color-surface); border: 1px solid var(--color-border);
+  background: #CCE8F5; color: var(--color-text);
   box-shadow: 0 4px 20px #0002;
 }
