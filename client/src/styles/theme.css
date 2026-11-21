@@ -34,3 +34,10 @@ small { font-size: var(--fs-small); color: #205C80; }
   background: #CCE8F5; color: var(--color-text);
   box-shadow: 0 4px 20px #0002;
 }
+.card-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "./api.js";
 import { statusLabel } from "./statuses.js";
 import Review from "./Review.jsx";
+import RepairCard from "./RepairCard.jsx";
 
 export default function Dashboard({ user }) {
   const [items, setItems] = useState([])
@@ -36,14 +37,14 @@ export default function Dashboard({ user }) {
       )}
       <div className="grid cols-2">
         {items.map(item => (
-          <article key={item.id} className="card stack">
+          <RepairCard key={item.id} item={item}>
             <h3>{item.title}</h3>
             <p>{item.description}</p>
             <p>{item.address}</p>
             <p>{item.visit_date}</p>
             <p>Статус: {statusLabel(item.status)}</p>
             <Review item={item} />
-          </article>
+          </RepairCard>
         ))}
       </div>
     </>

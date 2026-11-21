@@ -1,11 +1,13 @@
 import { db } from "./db.js";
 
 export function addReviewRoutes(app, auth) {
-  app.get("/api/items/:id/review", auth, async (req, res) => {
+  const path = "/api/items/:id/review"
+
+  app.get(path, auth, async (req, res) => {
     const id = Number(req.params.id)
 
     if (!Number.isSafeInteger(id) || id <= 0) {
-      return res.status(400).json({ message: "Некорректный идентификатор записи" })
+      return res.status(400).json({ message: "Некорректный идентификатор заявки" })
     }
 
     const [items] = await db.query(
@@ -14,65 +16,110 @@ export function addReviewRoutes(app, auth) {
     )
 
     if (items.length === 0) {
-      return res.status(404).json({ message: "Запись не найдена" })
+      return res.status(404).json({ message: "Заявка не найдена" })
     }
 
     if (items[0].user_id !== req.user.id) {
-      return res.status(403).json({ message: "Это чужая запись" })
+      return res.status(403).json({ message: "Это чужая заявка" })
     }
 
     const [rows] = await db.query(
-      `SELECT comment FROM reviews WHERE item_id = ?`,
+      `SELECT comment, rating FROM reviews WHERE item_id = ?`,
       [id]
     )
 
     res.json(rows[0] || null)
   })
 
-  app.post("/api/items/:id/review", auth, async (req, res) => {
+  async function save(req, res) {
     const id = Number(req.params.id)
     const body = req.body || {}
     
     const comment = typeof body.comment === "string" ? body.comment.trim() : ""
+    const rating = body.rating
+    const errors = {}
 
-    if (!Number.isSafeInteger(id) || id <= 0 || !comment || comment.length > 1000) {
-      return res.status(400).json({ message: "Проверьте номер записи и текст отзыва (до 1000 символов)" })
+    if (comment.length < 5 || comment.length > 500) {
+      errors.comment = "Введите от 5 до 500 символов"
     }
 
-    const [rows] = await db.query(
-      `SELECT user_id, status FROM items WHERE id = ?`,
-      [id]
-    )
-
-    if (rows.length === 0) {
-      return res.status(404).json({ message: "Запись не найдена" })
+    if (!Number.isSafeInteger(rating) || rating < 1 || rating > 5) {
+      errors.rating = "Выберите целую оценку от 1 до 5"
     }
 
-    if (rows[0].user_id !== req.user.id) {
-      return res.status(403).json({ message: "Это чужая запись" })
+    if (!Number.isSafeInteger(id) || id <= 0) {
+      return res.status(400).json({ message: "Некорректный идентификатор заявки" })
     }
 
-    if (rows[0].status !== 'completed') {
-      return res.status(403).json({ message: "Запись ещё не завершена" })
+    if (Object.keys(errors).length > 0) {
+      return res.status(400).json({ message: "Проверьте поля", errors })
     }
+
+    const connection = await db.getConnection()
 
     try {
-      const [result] = await db.query(
-        `INSERT INTO reviews (item_id, comment)
-        SELECT id, ? FROM items WHERE id = ? AND user_id = ? AND status = 'completed'`,
-        [comment, id, req.user.id]
+      await connection.beginTransaction()
+
+      const [items] = await connection.query(
+        `SELECT user_id, status FROM items WHERE id = ? FOR UPDATE`,
+        [id]
       )
 
-      if (!result.affectedRows) {
-        return res.status(409).json({ message: "Статус изменился. Обновите список." })
+      if (items.length === 0) {
+        await connection.rollback()
+        return res.status(404).json({ message: "Заявка не найдена" })
       }
-    } catch (error) {
-      if (error.code === "ER_DUP_ENTRY") {
+
+      if (items[0].user_id !== req.user.id) {
+        await connection.rollback()
+        return res.status(403).json({ message: "Это чужая заявка" })
+      }
+
+      if (items[0].status !== 'completed') {
+        await connection.rollback()
+        return res.status(403).json({ message: "Заявка ещё не завершена" })
+      }
+
+      const [reviews] = await connection.query(
+        `SELECT id FROM reviews WHERE item_id = ?`,
+        [id]
+      )
+      
+      const creating = req.method === "POST"
+
+      if (creating && reviews.length) {
+        await connection.rollback()
         return res.status(409).json({ message: "Отзыв уже существует" })
       }
-      throw error
-    }
 
-    res.status(201).json({ comment, message: "Отзыв сохранён" })
-  })
+      if (!creating && reviews.length === 0) {
+        await connection.rollback()
+        return res.status(403).json({ message: "Отзыв не найден" })
+      }
+
+      if (creating) {
+        await connection.query(
+          `INSERT INTO reviews (item_id, comment, rating) VALUES (?, ?, ?)`,
+          [id, comment, rating]
+        )
+      } else {
+        await connection.query(
+          `UPDATE reviews SET comment = ?, rating = ? WHERE item_id = ?`,
+          [comment, rating, id]
+        )
+      }
+      
+      await connection.commit()
+
+      res.status(creating ? 201 : 200).json({ comment, rating })
+    } catch (error) {
+      await connection.rollback()
+      throw error
+    } finally {
+      connection.release()
+    }
+  }
+
+  app.post(path, auth, save)
+  app.put(path, auth, save)
 }

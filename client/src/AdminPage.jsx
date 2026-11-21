@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "./api.js";
 import { statuses } from "./statuses.js";
+import RepairCard from "./RepairCard.jsx";
 
 export default function AdminPage() {
   const [items, setItems] = useState([])
@@ -105,7 +106,7 @@ export default function AdminPage() {
 
       <div className="grid cols-2">
         {visible.map(item => (
-          <article className="card stack" key={item.id}>
+          <RepairCard key={item.id} item={item}>
             <h2>Заявка № {item.id}</h2>
             <h3>{item.title}</h3>
             <p>{item.description}</p>
@@ -126,7 +127,7 @@ export default function AdminPage() {
                 ))}
               </select>
             </label>
-          </article>
+          </RepairCard>
         ))}
       </div>
 
