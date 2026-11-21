@@ -12,6 +12,7 @@ export default function AdminPage() {
   const [sort, setSort] = useState('desc')
   const [page, setPage] = useState(1)
   const [savingId, setSavingId] = useState(null)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     let active = true
@@ -25,7 +26,16 @@ export default function AdminPage() {
     }
   }, [])
 
-  const filtered = items.filter(item => !status || item.status === status).sort((a, b) => sort === 'asc' ? a.id - b.id : b.id - a.id)
+  const query = search.trim().toLowerCase()
+  const filtered = items.filter(item => {
+    const matchesStatus = !status || item.status === status
+    const matchesLogin = item.login.toLowerCase().includes(query)
+    return matchesStatus && matchesLogin
+  }).sort((a, b) => {
+    const byLogin = a.login.localeCompare(b.login, undefined, { sensitivity: 'base' })
+    const order = byLogin || a.id - b.id
+    return sort === 'asc' ? order : -order
+  })
   const totalPages = Math.max(1, Math.ceil(filtered.length / 4))
   const currentPage = Math.min(page, totalPages)
   const visible = filtered.slice((currentPage - 1) * 4, currentPage * 4)
@@ -74,6 +84,18 @@ export default function AdminPage() {
           </select>
         </label>
         <label className="field">
+          <span>Поиск по логину</span>
+          <input
+            type="search"
+            value={search}
+            onChange={event => {
+              setSearch(event.target.value)
+              setPage(1)
+            }}
+            placeholder="Введите логин или его часть"
+          />
+        </label>
+        <label className="field">
           <span>Порядок заявок</span>
           <select
             value={sort}
@@ -82,8 +104,8 @@ export default function AdminPage() {
               setPage(1)
             }}
           >
-            <option value="desc">Сначала новые</option>
-            <option value="asc">Сначала старые</option>
+            <option value="desc">Логин от Z до A</option>
+            <option value="asc">Логин от A до Z</option>
           </select>
         </label>
         <a href="/admin">Обновить список</a>
